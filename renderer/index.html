@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Peace</title>
+  <link rel="stylesheet" href="css/main.css" />
+</head>
+<body>
+
+  <!-- Layer 0: WebGL background -->
+  <canvas id="bg-canvas"></canvas>
+
+  <!-- Layer 1: Top dropdown menu (hidden by default) -->
+  <div id="top-trigger"></div>
+  <div id="top-menu">
+    <button class="menu-btn" data-mode="rain">Rain</button>
+    <button class="menu-btn" data-mode="sea">Sea</button>
+  </div>
+
+  <!-- Layer 2: Frosted glass container -->
+  <div id="glass-container">
+    <textarea id="editor" placeholder="Begin writing..." spellcheck="false"></textarea>
+
+    <!-- Bottom right: action buttons -->
+    <div id="actions">
+      <button id="btn-save">Save</button>
+      <button id="btn-release">Release</button>
+    </div>
+  </div>
+
+  <!-- Layer 3: Pomodoro timer (between glass and sliders) -->
+  <div id="pomodoro">
+    <span id="timer-display">25:00</span>
+  </div>
+
+  <!-- Layer 4: Bottom controls (outside glass) -->
+  <div id="bottom-controls">
+    <div class="slider-group">
+      <label for="slider-volume">Volume</label>
+      <input type="range" id="slider-volume" min="0" max="100" value="50" />
+    </div>
+    <div class="slider-group">
+      <label for="slider-effects">Effects</label>
+      <input type="range" id="slider-effects" min="0" max="100" value="70" />
+    </div>
+  </div>
+
+  <!-- Audio elements -->
+  <audio id="audio-rain" loop preload="auto"></audio>
+  <audio id="audio-sea" loop preload="auto"></audio>
+
+  <!-- Scripts -->
+  <script src="js/webgl.js"></script>
+  <script src="js/pomodoro.js"></script>
+  <script src="js/app.js"></script>
+
+</body>
+</html>

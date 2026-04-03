@@ -1,0 +1,16 @@
+{
+  "name": "peace",
+  "version": "0.1.0",
+  "description": "Immersive writing desktop app with dynamic weather backgrounds",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "test": "echo \"No tests yet\" && exit 0"
+  },
+  "keywords": ["writing", "focus", "electron", "webgl"],
+  "author": "PureWhite",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^33.0.0"
+  }
+}
