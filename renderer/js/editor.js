@@ -22,11 +22,27 @@ import TurndownService from 'turndown';
 
 // ── Resizable Image Extension ───────────────────────────────────────────────
 const ResizableImage = Image.extend({
+  draggable: true,
+  selectable: true,
+
   addAttributes() {
     return {
       ...this.parent?.(),
-      width: { default: null, renderHTML: (a) => (a.width ? { width: a.width } : {}) },
-      align: { default: 'center' },
+      width: {
+        default: null,
+        parseHTML: (element) => element.getAttribute('data-width') || element.getAttribute('width') || null,
+        renderHTML: (attrs) => (attrs.width ? { width: attrs.width, 'data-width': attrs.width } : {}),
+      },
+      align: {
+        default: 'center',
+        parseHTML: (element) => element.getAttribute('data-align') || 'center',
+        renderHTML: (attrs) => ({ 'data-align': attrs.align || 'center' }),
+      },
+      layout: {
+        default: 'center',
+        parseHTML: (element) => element.getAttribute('data-layout') || 'center',
+        renderHTML: (attrs) => ({ 'data-layout': attrs.layout || 'center' }),
+      },
     };
   },
 
@@ -35,6 +51,10 @@ const ResizableImage = Image.extend({
       const wrapper = document.createElement('div');
       wrapper.classList.add('image-resizable');
       wrapper.dataset.align = node.attrs.align || 'center';
+      wrapper.dataset.layout = node.attrs.layout || 'center';
+      wrapper.draggable = true;
+      wrapper.contentEditable = 'false';
+      wrapper.dataset.dragHandle = 'true';
 
       const img = document.createElement('img');
       img.src = node.attrs.src;
@@ -46,7 +66,54 @@ const ResizableImage = Image.extend({
       const handle = document.createElement('div');
       handle.classList.add('image-resize-handle');
 
-      wrapper.append(img, handle);
+      const controls = document.createElement('div');
+      controls.classList.add('image-layout-controls');
+
+      const layoutOptions = [
+        { value: 'left', label: '左', align: 'left' },
+        { value: 'center', label: '中', align: 'center' },
+        { value: 'right', label: '右', align: 'right' },
+      ];
+
+      const getCurrentAttrs = () => {
+        const pos = getPos();
+        if (typeof pos !== 'number') return null;
+        const currentNode = editor.state.doc.nodeAt(pos);
+        return currentNode?.attrs || null;
+      };
+
+      const applyAttrs = (attrs) => {
+        const pos = getPos();
+        if (typeof pos !== 'number') return;
+        const currentAttrs = getCurrentAttrs();
+        if (!currentAttrs) return;
+        editor.chain().focus()
+          .command(({ tr }) => {
+            tr.setNodeMarkup(pos, undefined, {
+              ...currentAttrs,
+              ...attrs,
+            });
+            return true;
+          })
+          .run();
+      };
+
+      for (const option of layoutOptions) {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.classList.add('image-layout-btn');
+        button.dataset.layout = option.value;
+        button.textContent = option.label;
+        button.classList.toggle('is-active', (node.attrs.layout || 'center') === option.value);
+        button.addEventListener('click', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          applyAttrs({ layout: option.value, align: option.align });
+        });
+        controls.appendChild(button);
+      }
+
+      wrapper.append(img, controls, handle);
 
       // Drag to resize
       let startX, startW;
@@ -54,25 +121,15 @@ const ResizableImage = Image.extend({
         const newW = Math.max(100, startW + (e.clientX - startX));
         img.style.width = newW + 'px';
       };
-      const onMouseUp = (e) => {
+      const onMouseUp = () => {
         document.removeEventListener('mousemove', onMouseMove);
         document.removeEventListener('mouseup', onMouseUp);
-        const pos = getPos();
-        if (typeof pos === 'number') {
-          editor.chain().focus()
-            .command(({ tr }) => {
-              tr.setNodeMarkup(pos, undefined, {
-                ...node.attrs,
-                width: img.style.width,
-              });
-              return true;
-            })
-            .run();
-        }
+        applyAttrs({ width: img.style.width });
       };
 
       handle.addEventListener('mousedown', (e) => {
         e.preventDefault();
+        e.stopPropagation();
         startX = e.clientX;
         startW = img.offsetWidth;
         document.addEventListener('mousemove', onMouseMove);
@@ -86,7 +143,12 @@ const ResizableImage = Image.extend({
           if (updatedNode.type.name !== 'image') return false;
           img.src = updatedNode.attrs.src;
           if (updatedNode.attrs.width) img.style.width = updatedNode.attrs.width;
+          else img.style.removeProperty('width');
           wrapper.dataset.align = updatedNode.attrs.align || 'center';
+          wrapper.dataset.layout = updatedNode.attrs.layout || 'center';
+          controls.querySelectorAll('.image-layout-btn').forEach((button) => {
+            button.classList.toggle('is-active', button.dataset.layout === (updatedNode.attrs.layout || 'center'));
+          });
           return true;
         },
         destroy: () => {},
@@ -102,6 +164,9 @@ const VideoBlock = Node.create({
   name: 'videoBlock',
   group: 'block',
   atom: true,
+  draggable: true,
+  selectable: true,
+  isolating: true,
 
   addAttributes() {
     return {
@@ -125,6 +190,9 @@ const VideoBlock = Node.create({
     return ({ node, getPos, editor }) => {
       const wrapper = document.createElement('div');
       wrapper.classList.add('video-block');
+      wrapper.draggable = true;
+      wrapper.contentEditable = 'false';
+      wrapper.dataset.dragHandle = 'true';
 
       const video = document.createElement('video');
       video.src = node.attrs.src;
@@ -196,6 +264,23 @@ export function createEditor(element, options = {}) {
       attributes: {
         class: 'peace-editor',
         spellcheck: 'false',
+      },
+      handleDOMEvents: {
+        dragstart: (_view, event) => {
+          const target = event.target;
+          if (!(target instanceof HTMLElement)) return false;
+          const mediaBlock = target.closest('.image-resizable, .video-block');
+          if (!mediaBlock) return false;
+          mediaBlock.classList.add('is-dragging');
+          return false;
+        },
+        dragend: (_view, event) => {
+          const target = event.target;
+          if (!(target instanceof HTMLElement)) return false;
+          const mediaBlock = target.closest('.image-resizable, .video-block');
+          mediaBlock?.classList.remove('is-dragging');
+          return false;
+        },
       },
     },
     onUpdate: options.onUpdate || (() => {}),

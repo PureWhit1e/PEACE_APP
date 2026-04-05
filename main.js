@@ -36,7 +36,10 @@ function createWindow() {
     mainWindow.loadURL('http://localhost:5173');
     // mainWindow.webContents.openDevTools();
   } else {
-    mainWindow.loadFile(path.join(__dirname, 'dist', 'renderer', 'index.html'));
+    const packagedRendererIndex = path.join(__dirname, 'dist', 'renderer', 'index.html');
+    const packagedIndex = path.join(__dirname, 'dist', 'index.html');
+    const entryFile = fs.existsSync(packagedRendererIndex) ? packagedRendererIndex : packagedIndex;
+    mainWindow.loadFile(entryFile);
   }
 
   mainWindow.on('closed', () => {

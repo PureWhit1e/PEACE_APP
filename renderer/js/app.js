@@ -11,6 +11,8 @@ import { createEditor, exportHTML, exportMarkdown, toolbarActions } from './edit
 import defaultBgUrl from '../../BG/default.jpg?url';
 import rainAmbientUrl from '../../music/rain_ambient.mp3?url';
 import seaAmbientUrl from '../../music/sea_ambient_mp3.mp3?url';
+import rainShaderSrc from '../shaders/rain.frag.glsl?raw';
+import seaShaderSrc from '../shaders/seascape.frag.glsl?raw';
 
 // ── DOM refs ────────────────────────────────────────────────────────────
 const canvas         = document.getElementById('bg-canvas');
@@ -85,42 +87,24 @@ const ctrlWavesVal   = document.getElementById('ctrl-waves-val');
 const ctrlRotateVal  = document.getElementById('ctrl-rotate-val');
 const ctrlHorizonVal = document.getElementById('ctrl-horizon-val');
 
-// Async-load real shaders
-(async function loadShaders() {
-  try {
-    const [rainRes, seaRes] = await Promise.all([
-      fetch('shaders/rain.frag.glsl'),
-      fetch('shaders/seascape.frag.glsl'),
-    ]);
+renderer.registerMode('sea', {
+  fragSrc: seaShaderSrc,
+  customUniforms: {
+    uWaveHeight: ctrlWaves.value / 100,
+    uRotateSpeed: ctrlRotate.value / 100,
+    uHorizon: ctrlHorizon.value / 100,
+  },
+});
 
-    if (seaRes.ok) {
-      const seaSrc = await seaRes.text();
-      renderer.registerMode('sea', {
-        fragSrc: seaSrc,
-        customUniforms: {
-          uWaveHeight: ctrlWaves.value / 100,
-          uRotateSpeed: ctrlRotate.value / 100,
-          uHorizon: ctrlHorizon.value / 100,
-        },
-      });
-    }
-
-    if (rainRes.ok) {
-      const rainSrc = await rainRes.text();
-      renderer.registerMode('rain', {
-        fragSrc: rainSrc,
-        inputs: { iChannel0: rainBgTexture },
-        customUniforms: {
-          uRainAmount: ctrlRain.value / 100,
-          uFogAmount: ctrlFog.value / 100,
-          uRefraction: ctrlRefract.value / 100,
-        },
-      });
-    }
-  } catch (e) {
-    console.warn('Failed to load shaders:', e);
-  }
-})();
+renderer.registerMode('rain', {
+  fragSrc: rainShaderSrc,
+  inputs: { iChannel0: rainBgTexture },
+  customUniforms: {
+    uRainAmount: ctrlRain.value / 100,
+    uFogAmount: ctrlFog.value / 100,
+    uRefraction: ctrlRefract.value / 100,
+  },
+});
 
 // ── TipTap Editor ───────────────────────────────────────────────────────
 const savedContent = localStorage.getItem(LS_KEY_CONTENT);
@@ -653,6 +637,39 @@ let pendingImg = null;
 let crop = { x: 0, y: 0, w: 0, h: 0 };
 let dragState = null;
 
+function _openBgPreview(dataUrl) {
+  const img = new Image();
+  img.onload = () => {
+    pendingImg = img;
+    previewImg.src = dataUrl;
+    previewOverlay.classList.remove('bg-preview-hidden');
+    requestAnimationFrame(() => requestAnimationFrame(() => _initCrop()));
+  };
+  img.src = dataUrl;
+}
+
+async function _pickBackgroundImage() {
+  if (window.peace?.pickImage) {
+    const result = await window.peace.pickImage();
+    if (result.success && result.dataUrl) _openBgPreview(result.dataUrl);
+    return;
+  }
+
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = 'image/*';
+  input.onchange = () => {
+    const file = input.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      if (typeof e.target?.result === 'string') _openBgPreview(e.target.result);
+    };
+    reader.readAsDataURL(file);
+  };
+  input.click();
+}
+
 function _updateDims() {
   const cw = cropContainer.offsetWidth;
   const ch = cropContainer.offsetHeight;
@@ -752,20 +769,7 @@ document.addEventListener('mousemove', (e) => {
 
 document.addEventListener('mouseup', () => { dragState = null; });
 
-btnBgUpload.addEventListener('click', async () => {
-  if (!window.peace) return;
-  const result = await window.peace.pickImage();
-  if (result.success && result.dataUrl) {
-    const img = new Image();
-    img.onload = () => {
-      pendingImg = img;
-      previewImg.src = result.dataUrl;
-      previewOverlay.classList.remove('bg-preview-hidden');
-      requestAnimationFrame(() => requestAnimationFrame(() => _initCrop()));
-    };
-    img.src = result.dataUrl;
-  }
-});
+btnBgUpload.addEventListener('click', _pickBackgroundImage);
 
 previewConfirm.addEventListener('click', () => {
   if (!pendingImg) return;

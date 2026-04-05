@@ -4,12 +4,12 @@
   "description": "Immersive writing desktop app with dynamic weather backgrounds",
   "main": "main.js",
   "scripts": {
-    "dev": "concurrently \"vite renderer\" \"wait-on http://localhost:5173 && electron .\"",
-    "start": "vite build renderer && electron .",
-    "build:web": "vite build renderer",
-    "build": "vite build renderer && electron-builder --win",
-    "build:mac": "vite build renderer && electron-builder --mac",
-    "build:linux": "vite build renderer && electron-builder --linux"
+    "dev": "concurrently \"vite\" \"wait-on http://localhost:5173 && electron .\"",
+    "start": "vite build && electron .",
+    "build:web": "vite build",
+    "build": "vite build && electron-builder --win",
+    "build:mac": "vite build && electron-builder --mac",
+    "build:linux": "vite build && electron-builder --linux"
   },
   "keywords": ["writing", "focus", "electron", "webgl", "tiptap"],
   "author": "PureWhite",
@@ -42,20 +42,15 @@
     "files": [
       "main.js",
       "preload.js",
-      "dist/renderer/**/*",
-      "music/**/*",
-      "BG/**/*"
-    ],
-    "extraResources": [
-      { "from": "music", "to": "music" },
-      { "from": "BG", "to": "BG" }
+      "dist/renderer/**/*"
     ],
     "win": {
       "target": [{ "target": "nsis", "arch": ["x64"] }],
       "icon": "build/icon.ico"
     },
     "nsis": {
-      "oneClick": true,
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
       "perMachine": false,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,

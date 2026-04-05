@@ -716,25 +716,89 @@ html, body {
 /* ── Resizable Image ───────────────────────────────────────────────────── */
 .image-resizable {
   position: relative;
-  display: flex;
-  justify-content: center;
+  display: block;
   margin: 1em 0;
-  cursor: default;
+  cursor: grab;
+  clear: both;
+  width: fit-content;
+  max-width: min(100%, 640px);
 }
 
-.image-resizable[data-align="left"]   { justify-content: flex-start; }
-.image-resizable[data-align="right"]  { justify-content: flex-end; }
-.image-resizable[data-align="center"] { justify-content: center; }
+.image-resizable[data-align="left"] {
+  float: left;
+  margin: 0.25em 1.1em 0.85em 0;
+}
+
+.image-resizable[data-align="right"] {
+  float: right;
+  margin: 0.25em 0 0.85em 1.1em;
+}
+
+.image-resizable[data-align="center"] {
+  float: none;
+  margin: 1em auto;
+}
+
+.image-resizable[data-layout="left"],
+.image-resizable[data-layout="right"] {
+  max-width: min(58%, 460px);
+}
+
+.image-resizable[data-layout="center"] {
+  max-width: min(100%, 640px);
+}
 
 .image-resizable img {
   max-width: 100%;
   border-radius: 8px;
   display: block;
   transition: box-shadow 0.2s ease;
+  pointer-events: none;
 }
 
 .image-resizable:hover img {
   box-shadow: 0 0 0 2px rgba(120, 200, 255, 0.3);
+}
+
+.image-layout-controls {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  display: flex;
+  gap: 4px;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  z-index: 2;
+}
+
+.image-resizable:hover .image-layout-controls,
+#editor .ProseMirror .ProseMirror-selectednode.image-resizable .image-layout-controls {
+  opacity: 1;
+}
+
+.image-layout-btn {
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(12, 16, 24, 0.75);
+  color: rgba(255, 255, 255, 0.72);
+  border-radius: 999px;
+  padding: 3px 8px;
+  font-size: 11px;
+  line-height: 1;
+  cursor: pointer;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.image-layout-btn:hover,
+.image-layout-btn.is-active {
+  color: rgba(255, 255, 255, 0.95);
+  border-color: rgba(160, 220, 255, 0.45);
+  background: rgba(70, 110, 150, 0.35);
+}
+
+
+.image-resizable.is-dragging {
+  opacity: 0.55;
 }
 
 .image-resize-handle {
@@ -759,12 +823,23 @@ html, body {
   margin: 1em 0;
   display: flex;
   justify-content: center;
+  cursor: grab;
 }
 
 .video-block video {
   max-width: 100%;
   border-radius: 8px;
   outline: none;
+  pointer-events: auto;
+}
+
+.video-block.is-dragging {
+  opacity: 0.55;
+}
+
+#editor .ProseMirror .ProseMirror-selectednode.image-resizable img,
+#editor .ProseMirror .ProseMirror-selectednode.video-block video {
+  box-shadow: 0 0 0 2px rgba(160, 220, 255, 0.4);
 }
 
 /* ── Scrollbar (editor container) ──────────────────────────────────────── */
