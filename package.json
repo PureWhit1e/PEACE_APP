@@ -1,16 +1,73 @@
 {
   "name": "peace",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "Immersive writing desktop app with dynamic weather backgrounds",
   "main": "main.js",
   "scripts": {
-    "start": "electron .",
-    "test": "echo \"No tests yet\" && exit 0"
+    "dev": "concurrently \"vite renderer\" \"wait-on http://localhost:5173 && electron .\"",
+    "start": "vite build renderer && electron .",
+    "build:web": "vite build renderer",
+    "build": "vite build renderer && electron-builder --win",
+    "build:mac": "vite build renderer && electron-builder --mac",
+    "build:linux": "vite build renderer && electron-builder --linux"
   },
-  "keywords": ["writing", "focus", "electron", "webgl"],
+  "keywords": ["writing", "focus", "electron", "webgl", "tiptap"],
   "author": "PureWhite",
   "license": "MIT",
+  "dependencies": {
+    "@tiptap/core": "^2.11.0",
+    "@tiptap/pm": "^2.11.0",
+    "@tiptap/starter-kit": "^2.11.0",
+    "@tiptap/extension-image": "^2.11.0",
+    "@tiptap/extension-task-list": "^2.11.0",
+    "@tiptap/extension-task-item": "^2.11.0",
+    "@tiptap/extension-placeholder": "^2.11.0",
+    "@tiptap/extension-text-style": "^2.11.0",
+    "@tiptap/extension-color": "^2.11.0",
+    "turndown": "^7.2.0"
+  },
   "devDependencies": {
-    "electron": "^33.0.0"
+    "electron": "^33.0.0",
+    "electron-builder": "^25.1.8",
+    "vite": "^6.0.0",
+    "concurrently": "^9.0.0",
+    "wait-on": "^8.0.0"
+  },
+  "build": {
+    "appId": "com.purewhite.peace",
+    "productName": "Peace",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "dist/renderer/**/*",
+      "music/**/*",
+      "BG/**/*"
+    ],
+    "extraResources": [
+      { "from": "music", "to": "music" },
+      { "from": "BG", "to": "BG" }
+    ],
+    "win": {
+      "target": [{ "target": "nsis", "arch": ["x64"] }],
+      "icon": "build/icon.ico"
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Peace"
+    },
+    "mac": {
+      "target": "dmg",
+      "icon": "build/icon.ico"
+    },
+    "linux": {
+      "target": "AppImage",
+      "icon": "build/icon.ico"
+    }
   }
 }
